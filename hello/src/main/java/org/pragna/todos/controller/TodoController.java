@@ -14,43 +14,31 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/todos")
+@RequestMapping("/api")
+
 public class TodoController {
     private final TodoService todoService;
 
     public TodoController(TodoService todoService) {
         this.todoService = todoService;
     }
-
-    @GetMapping
+   
+    @GetMapping({"/"})
     public List<Todo> getTodos() {
-        return todoService.getAllTodos();
+      return todoService.getAllTodos();
     }
 
-    @GetMapping("/{id}")
-    public Todo getTodoById(@PathVariable int id) {
-        return todoService.getTodoById(id);
-    }
-
-    @PostMapping
-    public Todo addTodo(@RequestBody Todo todo) {
+    @PostMapping({"/add"})
+    public void addTodo(@RequestBody Todo todo) {
         todoService.addTodo(todo);
-        return todo;
+        
     }
-
-    @PutMapping("/{id}")
-    public Todo updateTodo(@PathVariable int id, @RequestBody Todo todo) {
-        todoService.updateTodo(id, todo);
-        return todoService.getTodoById(id);
+    @PutMapping({"/update/{id}"})
+    public void updateTodo(@PathVariable int id, @RequestBody Todo updatedTodo) {
+        todoService.updateTodo(id, updatedTodo);
     }
-
-    @DeleteMapping("/{id}")
+    @DeleteMapping({"/delete/{id}"})
     public void deleteTodo(@PathVariable int id) {
         todoService.deleteTodo(id);
     }
-
-    @DeleteMapping
-    public void clearAllTodos() {
-        todoService.clearAllTodos();
     }
-}
