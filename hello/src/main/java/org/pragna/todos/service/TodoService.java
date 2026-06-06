@@ -2,55 +2,85 @@ package org.pragna.todos.service;
 
 import org.pragna.todos.model.Todo;
 import org.springframework.stereotype.Service;
+import java.nio.file.Path;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class TodoService {
-    private List<Todo> todos = new ArrayList<>();
-    private int nextId = 1;
+    private static final Path DAT_FILE_PATH = Path.of("data/todos.json");
+    private final ObjectMapper mapper = new ObjectMapper();
 
     public TodoService() {
-        // Initialize with sample data
-        todos.add(new Todo(nextId++, "Learn Java", "Study Java basics and OOP", false));
-        todos.add(new Todo(nextId++, "Build Todo App", "Create a full-stack todo application", true));
     }
 
     public List<Todo> getAllTodos() {
-        return new ArrayList<>(todos);
+        try {
+            if (DAT_FILE_PATH.toFile().exists()) {
+                Todo[] todos = mapper.readValue(DAT_FILE_PATH.toFile(), Todo[].class);
+                return new ArrayList<>(Arrays.asList(todos));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new ArrayList<>();
     }
 
     public Todo getTodoById(int id) {
-        return todos.stream()
+        return loadAllTodos().stream()
                 .filter(t -> t.getId() == id)
                 .findFirst()
                 .orElse(null);
     }
 
     public void addTodo(Todo todo) {
-        todo.setId(nextId++);
+        List<Todo> todos = loadAllTodos();
         todos.add(todo);
+        saveAllTodos(todos);
     }
 
     public void updateTodo(int id, Todo updatedTodo) {
+        List<Todo> todos = loadAllTodos();
         Optional<Todo> existingTodo = todos.stream()
                 .filter(t -> t.getId() == id)
                 .findFirst();
-        
+
         if (existingTodo.isPresent()) {
             Todo todo = existingTodo.get();
             todo.setTitle(updatedTodo.getTitle());
             todo.setDescription(updatedTodo.getDescription());
             todo.setCompleted(updatedTodo.isCompleted());
         }
+        saveAllTodos(todos);
     }
 
     public void deleteTodo(int id) {
+        List<Todo> todos = loadAllTodos();
         todos.removeIf(t -> t.getId() == id);
+        saveAllTodos(todos);
     }
 
-    public void clearAllTodos() {
-        todos.clear();
+    private List<Todo> loadAllTodos() {
+        try {
+            if (DAT_FILE_PATH.toFile().exists()) {
+                Todo[] todos = mapper.readValue(DAT_FILE_PATH.toFile(), Todo[].class);
+                return new ArrayList<>(Arrays.asList(todos));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new ArrayList<>();
+    }
+
+    private void saveAllTodos(List<Todo> todos) {
+        try {
+            DAT_FILE_PATH.toFile().getParentFile().mkdirs();
+            mapper.writerWithDefaultPrettyPrinter().writeValue(DAT_FILE_PATH.toFile(), todos);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

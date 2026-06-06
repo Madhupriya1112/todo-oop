@@ -1,151 +1,155 @@
-const API_BASE_URL = '/api/todos';
+const API_URL = "http://localhost:8080/api";
+let todos = [];
 
-document.addEventListener('DOMContentLoaded', loadTodos);
+// FETCH TODOS
+async function fetchTodos() {
 
-async function loadTodos() {
-    try {
-        const response = await fetch(API_BASE_URL);
-        const todos = await response.json();
-        displayTodos(todos);
-    } catch (error) {
-        console.error('Error loading todos:', error);
-        alert('Failed to load todos');
-    }
+    const response = await fetch(API_URL + "/");
+
+    todos = await response.json();
+
+    const todoList = document.getElementById("todoList");
+
+    todoList.innerHTML = "";
+
+    todos.forEach(todo => {
+
+        const div = document.createElement("div");
+
+        div.className = "todo-item";
+
+        div.innerHTML = `
+
+            <div class="todo-header">
+
+                <h3 class="${todo.completed ? 'completed' : ''}">
+                    ${todo.title}
+                </h3>
+
+                <input
+                    type="checkbox"
+                    ${todo.completed ? "checked" : ""}
+                    onchange="toggleCompleted(
+                        ${todo.id},
+                        '${todo.title}',
+                        '${todo.description}',
+                        this.checked
+                    )"
+                >
+
+            </div>
+
+            <p>${todo.description}</p>
+
+            <p>
+                Status:
+                <span class="${todo.completed ? 'done' : 'pending'}">
+                    ${todo.completed ? "Completed" : "Pending"}
+                </span>
+            </p>
+
+            <button
+                class="delete-btn"
+                onclick="deleteTodo(${todo.id})"
+            >
+                Delete
+            </button>
+        `;
+
+        todoList.appendChild(div);
+    });
 }
 
 
-function displayTodos(todos) {
-    const todoList = document.getElementById('todoList');
-    
-    if (todos.length === 0) {
-        todoList.innerHTML = '<div class="empty-message">No todos yet. Add one to get started!</div>';
-        return;
-    }
 
-    todoList.innerHTML = todos.map(todo => `
-        <li class="todo-item ${todo.completed ? 'completed' : ''}">
-            <div class="todo-content">
-                <div class="todo-title">${escapeHtml(todo.title)}</div>
-                <div class="todo-description">${escapeHtml(todo.description)}</div>
-            </div>
-            <div class="todo-actions">
-                <button class="todo-btn toggle-btn" onclick="toggleTodo(${todo.id}, ${!todo.completed})">
-                    ${todo.completed ? 'Undo' : 'Done'}
-                </button>
-                <button class="todo-btn delete-btn" onclick="deleteTodo(${todo.id})">Delete</button>
-            </div>
-        </li>
-    `).join('');
-}
-
-
+// ADD TODO
 async function addTodo() {
-    const title = document.getElementById('todoTitle').value.trim();
-    const description = document.getElementById('todoDescription').value.trim();
 
-    if (!title) {
-        alert('Please enter a todo title');
-        return;
-    }
+    // RANDOM INTEGER ID
+    const id = todos.length+1;
 
-    try {
-        const response = await fetch(API_BASE_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                title: title,
-                description: description,
-                completed: false
-            })
-        });
+    const title = document.getElementById("title").value;
 
-        if (response.ok) {
-            document.getElementById('todoTitle').value = '';
-            document.getElementById('todoDescription').value = '';
-            loadTodos();
-        } else {
-            alert('Failed to add todo');
-        }
-    } catch (error) {
-        console.error('Error adding todo:', error);
-        alert('Failed to add todo');
-    }
-}
+    const description = document.getElementById("description").value;
 
 
-async function toggleTodo(id, completed) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                completed: completed
-            })
-        });
+    const todo = {
 
-        if (response.ok) {
-            loadTodos();
-        } else {
-            alert('Failed to update todo');
-        }
-    } catch (error) {
-        console.error('Error updating todo:', error);
-        alert('Failed to update todo');
-    }
-}
+        id: id,
 
+        title: title,
 
-async function deleteTodo(id) {
-    if (confirm('Are you sure you want to delete this todo?')) {
-        try {
-            const response = await fetch(`${API_BASE_URL}/${id}`, {
-                method: 'DELETE'
-            });
+        description: description,
 
-            if (response.ok) {
-                loadTodos();
-            } else {
-                alert('Failed to delete todo');
-            }
-        } catch (error) {
-            console.error('Error deleting todo:', error);
-            alert('Failed to delete todo');
-        }
-    }
-}
-
-
-async function clearAll() {
-    if (confirm('Are you sure you want to delete ALL todos? This cannot be undone.')) {
-        try {
-            const response = await fetch(API_BASE_URL, {
-                method: 'DELETE'
-            });
-
-            if (response.ok) {
-                loadTodos();
-            } else {
-                alert('Failed to clear todos');
-            }
-        } catch (error) {
-            console.error('Error clearing todos:', error);
-            alert('Failed to clear todos');
-        }
-    }
-}
-
-
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
+        completed: false
     };
-    return text.replace(/[&<>"']/g, m => map[m]);
+
+
+    await fetch(API_URL + "/add", {
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify(todo)
+    });
+
+
+    fetchTodos();
+
+
+    document.getElementById("title").value = "";
+
+    document.getElementById("description").value = "";
 }
+
+
+
+// UPDATE COMPLETED STATUS
+async function toggleCompleted(id, title, description, completed) {
+
+    const updatedTodo = {
+
+        id: id,
+
+        title: title,
+
+        description: description,
+
+        completed: completed
+    };
+
+
+    await fetch(API_URL + "/update/" + id, {
+
+        method: "PUT",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: JSON.stringify(updatedTodo)
+    });
+
+
+    fetchTodos();
+}
+
+
+
+// DELETE TODO
+async function deleteTodo(id) {
+
+    await fetch(API_URL + "/delete/" + id, {
+
+        method: "DELETE"
+    });
+
+    fetchTodos();
+}
+
+
+// INITIAL LOAD
+fetchTodos();
