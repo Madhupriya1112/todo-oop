@@ -29,12 +29,7 @@ public class TodoService {
         return new ArrayList<>();
     }
 
-    public Todo getTodoById(int id) {
-        return loadAllTodos().stream()
-                .filter(t -> t.getId() == id)
-                .findFirst()
-                .orElse(null);
-    }
+    
 
     public void addTodo(Todo todo) {
         List<Todo> todos = loadAllTodos();
